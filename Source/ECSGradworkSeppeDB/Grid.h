@@ -23,10 +23,13 @@ private:
 	int m_Cols = 100; //cols are equal to rows
 	TSubclassOf<class APixel> m_PixelClass;
 	APixel* m_pCurrPixel;
-	TArray<AActor*> m_GridPtrArray;
-	
+	TArray<APixel*> m_GridPtrArray;
+
+	APixel* GetPixelFromGrid(int x, int y) const;
 	bool m_IsGridCreated = false;
 
+
+	bool UpdateSandPixel(APixel* processedPixel, int xGridPos, int yGridPos);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
