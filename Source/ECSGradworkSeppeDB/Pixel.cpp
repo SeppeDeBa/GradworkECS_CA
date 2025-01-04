@@ -19,7 +19,8 @@ void APixel::BeginPlay()
 	Super::BeginPlay();
 	m_pMeshMaterial = pStaticMesh->GetMaterial(0);
 	m_pDynamicMaterial = UMaterialInstanceDynamic::Create(m_pMeshMaterial, NULL);
-	
+	SetColor(FVector(1,0,0));
+	pStaticMesh->SetMaterial(0, m_pDynamicMaterial);
 }
 
 // Called every frame
@@ -31,8 +32,9 @@ void APixel::Tick(float DeltaTime)
 
 void APixel::SetColor(FVector newColor)
 {
-	m_pDynamicMaterial->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(FVector(m_Color)));
-	pStaticMesh->SetMaterial(0, m_pDynamicMaterial);
+	m_pDynamicMaterial->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(FVector(newColor)));
+	m_Color = newColor;
+	//pStaticMesh->SetMaterial(0, m_pDynamicMaterial);
 }
 
 void APixel::SetPreviousType()
@@ -46,6 +48,20 @@ void APixel::SetNewType(PixelType newType)
 	{
 		SetPreviousType();
 		m_CurrentPixelType = newType;
+		switch(m_CurrentPixelType)
+		{
+		case EMPTY:
+			SetColor(FVector(1.f, 0.f, 0.f));
+			break;
+		case SAND:
+			SetColor(FVector(1.f, 0.55f, 0.2f));
+			break;
+		case WATER:
+			SetColor(FVector(0, 0.5f, 1.f));
+
+			break;
+		default: ;
+		}
 	}
 }
 

@@ -18,9 +18,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void GeneratePixels();
 	void GenerateNext();
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "GridVariables")
+	float GridSize = 1000.f;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "GridVariables")
+	int Cols = 25; //cols are equal to rows
+
+	const float m_UpdateTimerMax = 5.f;
+	float m_CurrTimer = 0.f;
 private:
-	float m_GridSize = 2000.f;
-	int m_Cols = 100; //cols are equal to rows
+
+
 	TSubclassOf<class APixel> m_PixelClass;
 	APixel* m_pCurrPixel;
 	TArray<APixel*> m_GridPtrArray;
