@@ -6,15 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "Pixel.generated.h"
 
-
-UENUM(BlueprintType)
-enum PixelType
-{
-	EMPTY UMETA(DisplayName = "EMPTY"),
-	SAND UMETA(DisplayName = "SAND"),
-	WATER UMETA(DisplayName = "WATER")
-};
-
 UCLASS()
 class ECSGRADWORKSEPPEDB_API APixel : public AActor
 {
@@ -26,14 +17,24 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* pStaticMesh;
 
+	
+
 private:
 	UMaterialInterface* m_pMeshMaterial;
 	UMaterialInstanceDynamic* m_pDynamicMaterial;
 	TArray<USceneComponent*> m_pMeshChildren;
-	PixelType m_CurrentPixelType = EMPTY;
-	PixelType m_PreviousPixelType = EMPTY;
-	FVector m_Color;
+	
+	int m_amtOfNeighbours = 0;
+
 	FVector m_Scale;
+
+	bool m_IsAlive = false;
+	bool m_NextUpdateAliveStatus = false;
+
+	void SetAlive(bool aliveState);
+	void SetNeighbourCount(int neighbours);
+	void DoGameOfLifeCheck();
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -42,10 +43,12 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	void SetColor(FVector newColor);
-	void SetPreviousType();
-	void SetNewType(PixelType newType);
-	PixelType GetPreviousType() const;
-	PixelType GetType() const;
-	void  ResetPixel(PixelType typeToSet = EMPTY);
+	
+	bool GetCurrentAlive() const {return m_IsAlive;};
+	bool GetNextAlive() const {return m_NextUpdateAliveStatus;};
 
+
+	void ForceAlive();
+	void DoGameOfLifeLoop(int neighbours);
+	void UpdatePixelAliveStatus();
 };

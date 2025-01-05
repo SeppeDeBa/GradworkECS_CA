@@ -19,7 +19,7 @@ void APixel::BeginPlay()
 	Super::BeginPlay();
 	m_pMeshMaterial = pStaticMesh->GetMaterial(0);
 	m_pDynamicMaterial = UMaterialInstanceDynamic::Create(m_pMeshMaterial, NULL);
-	SetColor(FVector(1,0,0));
+	SetColor(FVector(0.f,0.f,0.f));
 	pStaticMesh->SetMaterial(0, m_pDynamicMaterial);
 }
 
@@ -27,56 +27,69 @@ void APixel::BeginPlay()
 void APixel::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void APixel::SetColor(FVector newColor)
 {
 	m_pDynamicMaterial->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(FVector(newColor)));
-	m_Color = newColor;
-	//pStaticMesh->SetMaterial(0, m_pDynamicMaterial);
 }
 
-void APixel::SetPreviousType()
+void APixel::ForceAlive()
 {
-	m_PreviousPixelType = m_CurrentPixelType;
-}
-
-void APixel::SetNewType(PixelType newType)
-{
-	if(newType != m_CurrentPixelType)
+	if(m_IsAlive != true)
 	{
-		SetPreviousType();
-		m_CurrentPixelType = newType;
-		switch(m_CurrentPixelType)
-		{
-		case EMPTY:
-			SetColor(FVector(1.f, 0.f, 0.f));
-			break;
-		case SAND:
-			SetColor(FVector(1.f, 0.55f, 0.2f));
-			break;
-		case WATER:
-			SetColor(FVector(0, 0.5f, 1.f));
+		m_IsAlive = true;
+		m_NextUpdateAliveStatus = true;
+		SetAlive(true);
+	}
+}
 
-			break;
-		default: ;
+void APixel::DoGameOfLifeLoop(int neighbours)
+{
+	SetNeighbourCount(neighbours);
+	DoGameOfLifeCheck();
+
+}
+
+void APixel::SetAlive(bool aliveState)
+{
+	m_NextUpdateAliveStatus = aliveState;
+	SetColor(FVector(aliveState, aliveState, 0.f));//will be yellow if alive, black if not
+}
+
+void APixel::SetNeighbourCount(int neighbours)
+{
+	m_amtOfNeighbours = neighbours;
+}
+
+void APixel::DoGameOfLifeCheck()
+{
+	if(m_IsAlive == true)
+	{
+		if(m_amtOfNeighbours <= 1)
+		{
+			SetAlive(false);
+		}
+		if(m_amtOfNeighbours >= 4)
+		{
+			SetAlive(false);
+		}
+		//stay alive if 2 or 3
+	}
+	else
+	{
+		if(m_amtOfNeighbours == 3)
+		{
+			SetAlive(true);
 		}
 	}
 }
 
-PixelType APixel::GetPreviousType() const
+void APixel::UpdatePixelAliveStatus()
 {
-	return m_PreviousPixelType;
+	if(m_NextUpdateAliveStatus != m_IsAlive)
+	{
+		m_IsAlive = m_NextUpdateAliveStatus;
+		SetColor(FVector(m_IsAlive, m_IsAlive, 0.f));//will be yellow if alive, black if not
+	}
 }
-
-PixelType APixel::GetType() const
-{
-	return m_CurrentPixelType;
-}
-
-void APixel::ResetPixel(PixelType typeToSet)
-{
-	SetNewType(typeToSet);
-}
-
