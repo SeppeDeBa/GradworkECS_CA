@@ -3,6 +3,8 @@
 #define LOG(Message, ...) UE_LOG(LogCategory, LogLevel, TEXT(Message), __VA_ARGS__)
 #include "Grid.h"
 
+#include "Kismet/GameplayStatics.h"
+
 // Sets default values
 AGrid::AGrid()
 {
@@ -17,6 +19,48 @@ AGrid::AGrid()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PixelClass is not valid!"));
+	}
+	
+}
+
+
+void AGrid::FlipIsGridRunning()
+{
+	m_IsGridRunning = !m_IsGridRunning;
+}
+
+void AGrid::FlipUpdateEveryFrame()
+{
+	UpdateEveryFrame = !UpdateEveryFrame;
+}
+
+void AGrid::DebugLogInfo()
+{
+	if(GEngine)
+	{
+		//pause state
+		if(m_IsGridRunning) GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Green, TEXT("Active"));
+		else GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, TEXT("Paused"));
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, TEXT("Space to toggle pause"));
+
+		//speed state
+		if(UpdateEveryFrame) GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Green, TEXT("Every Frame"));
+		else GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, TEXT("Slow"));
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, TEXT("F to toggle speed"));
+
+		//clear out
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Orange, TEXT("G to clear"));
+
+		//reload
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Orange, TEXT("R to reload"));
+
+		//generate single
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Orange, TEXT("N to single-frame(Only in pause)"));
+		//generate single
+
+
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Purple, TEXT("Population: ") + FString::Printf(TEXT("%d"), m_CurrAlivePixels));
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Purple, TEXT("Generation: ") + FString::Printf(TEXT("%d"), m_CurrGeneration));
 	}
 }
 
@@ -61,27 +105,135 @@ void AGrid::BeginPlay()
 {
 	Super::BeginPlay();
 	GeneratePixels();
+
+	//enable mouse
+	APlayerController* playerController = GetWorld()->GetFirstPlayerController();
+	if(playerController)
+	{
+		player1Controller = playerController;
+		playerController->bShowMouseCursor = true;
+		playerController->bEnableClickEvents = true;
+		playerController->bEnableMouseOverEvents = true;
+	}
 }
 
 // Called every frame
 void AGrid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	GenerateNext();
 
+	//1. check mouse clicks
+	if(player1Controller && player1Controller->WasInputKeyJustPressed(EKeys::LeftMouseButton))
+	{
+		FHitResult hitResult;
+		player1Controller->GetHitResultUnderCursor(ECC_Visibility, false, hitResult);
+
+		if(hitResult.bBlockingHit && hitResult.GetActor() == this)
+		{
+			OnMouseClicked((hitResult.Location));
+		}
+	}
+
+	//2. check spacebar input for pausing
+	if (player1Controller && player1Controller->WasInputKeyJustPressed(EKeys::SpaceBar))
+	{
+		FlipIsGridRunning();
+		UE_LOG(LogTemp, Log, TEXT("Toggled Grid Running: %s"), m_IsGridRunning ? TEXT("ON") : TEXT("OFF"));
+	}
+
+	//3. check F for speedup button
+	if (player1Controller && player1Controller->WasInputKeyJustPressed(EKeys::F))
+	{
+		FlipUpdateEveryFrame();
+		UE_LOG(LogTemp, Log, TEXT("Toggled Update Every Frame: %s"), UpdateEveryFrame ? TEXT("ON") : TEXT("OFF"));
+	}
 	
-	// if(m_IsGridCreated)
-	// {
-	// 	m_CurrTimer += DeltaTime;
-	// 	if(m_CurrTimer >= m_UpdateTimerMax)
-	// 	{
-	// 		m_CurrTimer = 0.f;
-	// 		GenerateNext();
-	// 	}
-	// }
+	//4. check next iteration if applicable
+	if(m_IsGridRunning)
+	{
+		if(UpdateEveryFrame)
+		{
+			GenerateNext();
+		}
+		else
+		{
+			if(m_IsGridCreated)
+			{
+				m_CurrTimer += DeltaTime;
+				if(m_CurrTimer >= UpdateTimerMax)
+				{
+					m_CurrTimer = 0.f;
+					GenerateNext();
+				}
+			}
+		}
+	}
+	//5. generate new iteration if paused and N pressed
+	else if (player1Controller && player1Controller->WasInputKeyJustPressed(EKeys::N))
+	{
+		GenerateNext();
+	}
+
+
+	//6. debug to screen
+	DebugLogInfo();
+
+	//7. reload level if R pressed
+	if (player1Controller && player1Controller->WasInputKeyJustPressed(EKeys::R))
+	{
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			FString CurrentLevelName = World->GetMapName();
+
+			//remove the prefix from the map name
+			const FString Prefix = World->StreamingLevelsPrefix;
+			if (CurrentLevelName.StartsWith(Prefix))
+			{
+				CurrentLevelName.RightChopInline(Prefix.Len());
+			}
+
+			//reload the current level
+			UGameplayStatics::OpenLevel(World, FName(*CurrentLevelName));
+		}
+	}
+
+	//8. on G press clear screen 
+	if (player1Controller && player1Controller->WasInputKeyJustPressed(EKeys::G))
+	{
+		for(APixel* pixelPtr : m_GridPtrArray)
+		{
+			pixelPtr->ForceDead();
+		}
+	}
 }
+
+void AGrid::OnMouseClicked(const FVector& ClickLocation)
+{
+	float CellSize = GridSize / Cols;
+	FVector LocalClick = ClickLocation - GetActorLocation();  // Convert to local grid space
+	int32 Column = FMath::FloorToInt((LocalClick.X + GridSize / 2) / CellSize);
+	int32 Row = FMath::FloorToInt((LocalClick.Y + GridSize / 2) / CellSize);
+
+	// Ensure the indices are within bounds
+	if (Column >= 0 && Column < Cols && Row >= 0 && Row < Cols)
+	{
+		APixel* ClickedPixel = GetPixelFromGrid(Column, Row);
+		if (ClickedPixel)
+		{
+			ClickedPixel->FlipState();
+			UE_LOG(LogTemp, Log, TEXT("Clicked on cell: Row = %d, Column = %d"), Row, Column);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Click was out of bounds!"));
+	}
+}
+
 void AGrid::GeneratePixels()
 {
+	m_CurrGeneration = 0;
 	m_IsGridCreated = false;
 	m_GridPtrArray.Empty();
 	FActorSpawnParameters spawnInfo;
@@ -101,7 +253,9 @@ void AGrid::GeneratePixels()
 				m_pCurrPixel = newPixel;
 				//m_pCurrPixel->SetNewType(EMPTY);
 				m_pCurrPixel->SetActorScale3D(FVector(scaleFactor));
-				if((y%3 != 0) && (x>0 && x < Cols-1)) m_pCurrPixel->ForceAlive();
+
+				if((y%4 == 1) && (x%4 != 0)) m_pCurrPixel->ForceAlive();
+				//if((y%3 != 0) && (x>0 && x < Cols-1)) m_pCurrPixel->ForceAlive();
 				m_GridPtrArray.Add(newPixel);
 			}
 		}
@@ -111,6 +265,8 @@ void AGrid::GeneratePixels()
 
 void AGrid::GenerateNext()
 {
+	++m_CurrGeneration;
+	m_CurrAlivePixels = 0;
 	for (int32 gridY = 0; gridY < Cols; gridY++)
 	{
 		for (int32 gridX = 0; gridX < Cols; gridX++)
@@ -126,8 +282,8 @@ void AGrid::GenerateNext()
 		{
 			m_pCurrPixel = GetPixelFromGrid(gridX, gridY);
 			m_pCurrPixel->UpdatePixelAliveStatus();
+			if(m_pCurrPixel->GetNextAlive()) ++m_CurrAlivePixels;
 		}
 	}
-	
 }
 

@@ -38,6 +38,7 @@ private:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:	
 	// Called every frame
@@ -47,8 +48,12 @@ public:
 	bool GetCurrentAlive() const {return m_IsAlive;};
 	bool GetNextAlive() const {return m_NextUpdateAliveStatus;};
 
-
+	void FlipState();
 	void ForceAlive();
+	void ForceDead();
 	void DoGameOfLifeLoop(int neighbours);
 	void UpdatePixelAliveStatus();
+
+	UFUNCTION()
+	void OnMeshClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 };

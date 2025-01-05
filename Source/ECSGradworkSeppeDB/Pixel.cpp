@@ -9,6 +9,20 @@ APixel::APixel()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	pStaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Cell Mesh"));
+
+	//enable collision
+	pStaticMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	pStaticMesh->SetCollisionObjectType(ECC_WorldDynamic);
+	pStaticMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	pStaticMesh->SetGenerateOverlapEvents(true);
+	pStaticMesh->SetNotifyRigidBodyCollision(true);
+	pStaticMesh->bReturnMaterialOnMove = true;
+
+	//enable input
+	pStaticMesh->SetEnableGravity(false);
+	pStaticMesh->bSelectable = true;
+	pStaticMesh->bUseDefaultCollision = true;
+	
 	RootComponent = pStaticMesh;
 	
 }
@@ -21,7 +35,20 @@ void APixel::BeginPlay()
 	m_pDynamicMaterial = UMaterialInstanceDynamic::Create(m_pMeshMaterial, NULL);
 	SetColor(FVector(0.f,0.f,0.f));
 	pStaticMesh->SetMaterial(0, m_pDynamicMaterial);
+
+	//add onclick events
+	pStaticMesh->OnClicked.AddDynamic(this, &APixel::OnMeshClicked);
 }
+
+void APixel::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if(pStaticMesh)
+	{
+		pStaticMesh->OnClicked.RemoveDynamic(this, &APixel::APixel::OnMeshClicked);
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
 
 // Called every frame
 void APixel::Tick(float DeltaTime)
@@ -41,6 +68,16 @@ void APixel::ForceAlive()
 		m_IsAlive = true;
 		m_NextUpdateAliveStatus = true;
 		SetAlive(true);
+	}
+}
+
+void APixel::ForceDead()
+{
+	if(m_IsAlive)
+	{
+		m_IsAlive = false;
+		m_NextUpdateAliveStatus = false;
+		SetAlive(false);
 	}
 }
 
@@ -85,6 +122,12 @@ void APixel::DoGameOfLifeCheck()
 	}
 }
 
+void APixel::FlipState()
+{
+	SetAlive(!m_IsAlive);
+	m_IsAlive = m_NextUpdateAliveStatus;
+}
+
 void APixel::UpdatePixelAliveStatus()
 {
 	if(m_NextUpdateAliveStatus != m_IsAlive)
@@ -92,4 +135,9 @@ void APixel::UpdatePixelAliveStatus()
 		m_IsAlive = m_NextUpdateAliveStatus;
 		SetColor(FVector(m_IsAlive, m_IsAlive, 0.f));//will be yellow if alive, black if not
 	}
+}
+
+void APixel::OnMeshClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+{
+	FlipState();
 }
