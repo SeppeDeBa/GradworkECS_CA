@@ -16,4 +16,11 @@ protected:
 	virtual void ConfigureQueries() override;
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 	FMassEntityQuery EntityQuery;
+	virtual void Initialize(UObject& Owner) override;
+
+private:
+	bool m_FirstFrameSkipped = false;
+
+	class AGM_CA* MyGamemode;
+
 };

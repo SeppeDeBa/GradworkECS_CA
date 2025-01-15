@@ -6,31 +6,28 @@
 #include "MassEntitySubsystem.h"
 #include "MassExecutionContext.h"
 #include "MassProcessor.h"
-#include "GameOfLifeProcessor.generated.h"
+#include "GridPlacementProcessor.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ECSGRADWORKSEPPEDB_API UGameOfLifeProcessor : public UMassProcessor
+class ECSGRADWORKSEPPEDB_API UGridPlacementProcessor : public UMassProcessor
 {
 	GENERATED_BODY()
 public:
-	UGameOfLifeProcessor();
+	UGridPlacementProcessor();
 protected:
 	virtual void ConfigureQueries() override;
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 	FMassEntityQuery EntityQuery;
-	virtual void Initialize(UObject& Owner) override;
 
+	virtual void Initialize(UObject& Owner) override;
 private:
-	bool doMeasurementsForGoL = true;
-	bool doMeasurementsFor10k = true;
-	bool doMeasurementsFor1k = true;
-	int itCounter;
-	double startTime;
-	double totalGameOfLifeGridCheckTimes;
-	bool startedCounting = false;
+	bool ranOnce = false;
+
+	int currentIt = 0;
+	
 	class AGM_CA* MyGamemode;
-	bool m_FirstFrameSkipped = false;
+
 };

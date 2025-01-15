@@ -17,8 +17,6 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* pStaticMesh;
 
-	
-
 private:
 	UMaterialInterface* m_pMeshMaterial;
 	UMaterialInstanceDynamic* m_pDynamicMaterial;

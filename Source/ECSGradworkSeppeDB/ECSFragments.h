@@ -18,6 +18,20 @@ struct ECSGRADWORKSEPPEDB_API FLifeFragment : public FMassFragment
 };
 
 USTRUCT(BlueprintType)
+struct ECSGRADWORKSEPPEDB_API FAliveColorFragment : public FMassFragment
+{
+	GENERATED_BODY()
+
+	FAliveColorFragment() = default;
+	
+	FAliveColorFragment(FColor Color) : AliveColor(Color){};
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FColor AliveColor = FColor::Yellow;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FColor DeadColor = FColor::Black; 
+};
+USTRUCT(BlueprintType)
 struct ECSGRADWORKSEPPEDB_API FGridLocationFragment : public FMassFragment
 {
 	GENERATED_BODY()
@@ -27,41 +41,10 @@ struct ECSGRADWORKSEPPEDB_API FGridLocationFragment : public FMassFragment
 };
 
 
-USTRUCT(BlueprintType)
-struct ECSGRADWORKSEPPEDB_API FVisualsFragment : public FMassFragment
-{
-	GENERATED_BODY()
-	//static mesh
-	UPROPERTY()
-	UStaticMeshComponent* StaticMesh;
-
-	//materials
-	UPROPERTY()
-	UMaterialInterface* MeshMaterial;
-	UPROPERTY()
-	UMaterialInstanceDynamic* DynamicMaterial;
-	UPROPERTY()
-	FVector Scale;
-};
-
-// ==== SHARED FRAGMENTS ====
-// USTRUCT()
-// struct ECSGRADWORKSEPPEDB_API FVGridParametersFragment : public FMassSharedFragment
-// {
-// 	GENERATED_BODY()	
-// 	int GridLength = 50;
-// 	float GridSize = 1000;
-// 	float cellSize = GridSize / GridLength;
-// };
-
 USTRUCT()
 struct ECSGRADWORKSEPPEDB_API FVTheLifeGridFragment : public FMassSharedFragment
 {
 	GENERATED_BODY()	
-	int GridLength = 50;
-	float GridSize = 1000;
-	float cellSize = GridSize / GridLength;
-
 	TMap<int, bool> LifeGrid;
 };
 

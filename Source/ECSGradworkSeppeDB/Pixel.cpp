@@ -111,7 +111,6 @@ void APixel::DoGameOfLifeCheck()
 		{
 			SetAlive(false);
 		}
-		//stay alive if 2 or 3
 	}
 	else
 	{
