@@ -3,6 +3,7 @@
 #define LOG(Message, ...) UE_LOG(LogCategory, LogLevel, TEXT(Message), __VA_ARGS__)
 #include "Grid.h"
 
+#include "PhysicsAssetGenerationSettings.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -137,6 +138,7 @@ void AGrid::Tick(float DeltaTime)
 	//2. check spacebar input for pausing
 	if (player1Controller && player1Controller->WasInputKeyJustPressed(EKeys::SpaceBar))
 	{
+		if(m_CurrGeneration == 0) startTime = FPlatformTime::Seconds();
 		FlipIsGridRunning();
 		UE_LOG(LogTemp, Log, TEXT("Toggled Grid Running: %s"), m_IsGridRunning ? TEXT("ON") : TEXT("OFF"));
 	}
@@ -176,26 +178,31 @@ void AGrid::Tick(float DeltaTime)
 
 
 	//6. debug to screen
-	DebugLogInfo();
+	if(doDebugVisualisation) DebugLogInfo();
 
 	//7. reload level if R pressed
-	if (player1Controller && player1Controller->WasInputKeyJustPressed(EKeys::R))
+	if (player1Controller && player1Controller->WasInputKeyJustPressed(EKeys::R) && !m_IsGridRunning)
 	{
-		UWorld* World = GetWorld();
-		if (World)
+		for(APixel* pixelPtr : m_GridPtrArray)
 		{
-			FString CurrentLevelName = World->GetMapName();
-
-			//remove the prefix from the map name
-			const FString Prefix = World->StreamingLevelsPrefix;
-			if (CurrentLevelName.StartsWith(Prefix))
-			{
-				CurrentLevelName.RightChopInline(Prefix.Len());
-			}
-
-			//reload the current level
-			UGameplayStatics::OpenLevel(World, FName(*CurrentLevelName));
+			pixelPtr->ForceDead();
+			m_CurrGeneration = 0;
 		}
+		// UWorld* World = GetWorld();
+		// if (World)
+		// {
+		// 	FString CurrentLevelName = World->GetMapName();
+		//
+		// 	//remove the prefix from the map name
+		// 	const FString Prefix = World->StreamingLevelsPrefix;
+		// 	if (CurrentLevelName.StartsWith(Prefix))
+		// 	{
+		// 		CurrentLevelName.RightChopInline(Prefix.Len());
+		// 	}
+		//
+		// 	//reload the current level
+		// 	UGameplayStatics::OpenLevel(World, FName(*CurrentLevelName));
+		//}
 	}
 
 	//8. on G press clear screen 
@@ -255,6 +262,8 @@ void AGrid::GeneratePixels()
 				m_pCurrPixel->SetActorScale3D(FVector(scaleFactor));
 
 				if((y%4 == 1) && (x%4 != 0)) m_pCurrPixel->ForceAlive();
+				else m_pCurrPixel->ForceDead();
+
 				//if((y%3 != 0) && (x>0 && x < Cols-1)) m_pCurrPixel->ForceAlive();
 				m_GridPtrArray.Add(newPixel);
 			}
@@ -266,7 +275,29 @@ void AGrid::GeneratePixels()
 void AGrid::GenerateNext()
 {
 	++m_CurrGeneration;
+	if (measure1000Generations && m_CurrGeneration == 1000)
+	{
+		thousandGenerationTime = FPlatformTime::Seconds();
+		double deltaTime = thousandGenerationTime - startTime;
+		UE_LOG(LogTemp, Log, TEXT("Elapsed Time: %f seconds"), deltaTime);
+	}
+	else if (measure10kGeneration && m_CurrGeneration == 10000)
+	{
+		double tenThousandGenTime = FPlatformTime::Seconds();
+		double deltaTime = (tenThousandGenTime - startTime) / 10000;
+		UE_LOG(LogTemp, Log, TEXT("average time over 10k frames is: %f"), deltaTime);
+	}
+	// else if ((m_CurrGeneration % 1000) == 0)
+	// {
+	// 	startTime = thousandGenerationTime;
+	// 	thousandGenerationTime = FPlatformTime::Seconds();
+	// 	double deltaTime = thousandGenerationTime - startTime;
+	// 	UE_LOG(LogTemp, Log, TEXT("Elapsed Time: %f seconds"), deltaTime); 
+	// }
 	m_CurrAlivePixels = 0;
+
+	
+	double GoLStartTime = FPlatformTime::Seconds();
 	for (int32 gridY = 0; gridY < Cols; gridY++)
 	{
 		for (int32 gridX = 0; gridX < Cols; gridX++)
@@ -275,7 +306,15 @@ void AGrid::GenerateNext()
 			m_pCurrPixel->DoGameOfLifeLoop(GetAmtPixelNeighbours(gridX, gridY));
 		}
 	}
+	double GoLEndTime = FPlatformTime::Seconds();
+	double GOLDeltaTime = GoLEndTime - GoLStartTime;
+	totalGameOfLifeGridCheckTimes +=GOLDeltaTime ;
+	if(measureGameOfLifeTicks && m_CurrGeneration == 1000)
+	{
+		totalGameOfLifeGridCheckTimes /= 1000.f;
+		UE_LOG(LogTemp, Log, TEXT("average time per game of life tick: %f"), totalGameOfLifeGridCheckTimes);
 
+	}
 	for (int32 gridY = 0; gridY < Cols; gridY++)
 	{
 		for (int32 gridX = 0; gridX < Cols; gridX++)

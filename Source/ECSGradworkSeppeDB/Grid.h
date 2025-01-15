@@ -15,7 +15,7 @@ class ECSGRADWORKSEPPEDB_API AGrid : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AGrid();
-	UFUNCTION(BlueprintCallable)
+	//generations
 	void GeneratePixels();
 	void GenerateNext();
 
@@ -24,15 +24,26 @@ public:
 	bool UpdateEveryFrame = false;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "GridVariables")
 	float UpdateTimerMax = 1.f;
+	float m_CurrTimer = 0.f;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Measuring")
+	bool measure1000Generations = false;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Measuring")
+	bool measure10kGeneration = false;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Measuring")
+	bool measureGameOfLifeTicks = false;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Measuring")
+	bool doDebugVisualisation = false;
+	
+	double startTime;
+	double thousandGenerationTime;
 
-
+	double totalGameOfLifeGridCheckTimes;
+	//GridParams
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "GridVariables")
 	float GridSize = 1000.f;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "GridVariables")
 	int Cols = 16; //cols are equal to rows
-
 	
-	float m_CurrTimer = 0.f;
 private:
 	bool m_IsGridRunning = false;
 

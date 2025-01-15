@@ -12,22 +12,18 @@ class ECSGRADWORKSEPPEDB_API APixel : public AActor
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
+	
 	APixel();
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* pStaticMesh;
-
-	
-
 private:
+	//visuals
 	UMaterialInterface* m_pMeshMaterial;
 	UMaterialInstanceDynamic* m_pDynamicMaterial;
 	TArray<USceneComponent*> m_pMeshChildren;
-	
-	int m_amtOfNeighbours = 0;
-
 	FVector m_Scale;
-
+	//behavioral
+	int m_amtOfNeighbours = 0;
 	bool m_IsAlive = false;
 	bool m_NextUpdateAliveStatus = false;
 

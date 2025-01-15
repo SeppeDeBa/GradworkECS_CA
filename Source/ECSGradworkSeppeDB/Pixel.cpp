@@ -27,7 +27,6 @@ APixel::APixel()
 	
 }
 
-// Called when the game starts or when spawned
 void APixel::BeginPlay()
 {
 	Super::BeginPlay();
